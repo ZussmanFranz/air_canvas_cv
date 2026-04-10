@@ -24,8 +24,8 @@ int main(int, char**){
     VideoCapture cap(0);
     if(!cap.isOpened()) return -1;
  
-    namedWindow("capture", WINDOW_NORMAL);
     namedWindow("HSV boundaries", WINDOW_NORMAL);
+    namedWindow("capture", WINDOW_NORMAL);
     namedWindow("mask", WINDOW_NORMAL);
 
 
@@ -38,7 +38,7 @@ int main(int, char**){
     createTrackbar("Value min", "HSV boundaries", &val_min_slider, VAL_SLIDER_MAX, nullptr);
     createTrackbar("Value max", "HSV boundaries", &val_max_slider, VAL_SLIDER_MAX, nullptr);
 
-    Mat frame, hsv_frame, mask;
+    Mat frame, display_frame, hsv_frame, mask;
 
     while(true)
     {
@@ -47,6 +47,10 @@ int main(int, char**){
         // flip the image to better control our drawing.
         // 1 is a flip flag. Positive value means "flip around Y-axis".
         flip(frame, frame, 1);
+
+        display_frame = frame.clone();
+
+        medianBlur(frame, frame, 5);    // soft blur to reduce noise and keep edges
 
         // convert RGB image to HSV
         cvtColor(frame, hsv_frame, COLOR_BGR2HSV);
@@ -69,7 +73,7 @@ int main(int, char**){
 
         imshow("mask", mask);
 
-        imshow("capture", frame);
+        imshow("capture", display_frame);
         
         if(waitKey(30) >= 0) break;
     }
