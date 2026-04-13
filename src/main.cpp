@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
@@ -9,16 +10,18 @@ using namespace cv;
 using namespace std;
 
 const int HUE_SLIDER_MAX = 179;
-int hue_min_slider = 114;
+int hue_min_slider = 112;
 int hue_max_slider = HUE_SLIDER_MAX;
 
 const int SAT_SLIDER_MAX = 255;
-int sat_min_slider = 52;
+int sat_min_slider = 113;
 int sat_max_slider = SAT_SLIDER_MAX;
 
 const int VAL_SLIDER_MAX = 255;
-int val_min_slider = 169;
+int val_min_slider = 90;
 int val_max_slider = VAL_SLIDER_MAX;
+
+const int CONTOUR_AREA_TRESHOLD = 200;
 
 int main(int, char**){
     VideoCapture cap(0);
@@ -70,6 +73,39 @@ int main(int, char**){
 
         // dilate - make everything that is left stronger and more consistent
         dilate(mask, mask, kernel, Point(-1,-1), 3);  // more iterations to make pointer stronger
+
+        vector<vector<Point>> contours;
+        vector<Vec4i> hierarchy;
+
+        findContours(mask, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+        if (!contours.empty()){
+
+            double max_area = 0;
+            int max_contour_id = -1;
+
+            // find a contour with maximum area
+            for (size_t i = 0; i < contours.size(); i++) {
+                double area = contourArea(contours[i]);
+                if (area > max_area) {
+                    max_area = area;
+                    max_contour_id = i;
+                }
+            }
+
+            if (max_contour_id != -1 && max_area > CONTOUR_AREA_TRESHOLD) {
+                Moments m = moments(contours[max_contour_id]);
+
+                // calculate it's central coordinates
+                if (m.m00 > 0) {
+                    int x = m.m10 / m.m00;
+                    int y = m.m01 / m.m00;
+
+                    // display a circle on those coordinates
+                    circle(display_frame, Point(x, y), 10, Scalar(255, 0, 0), 2);
+                }
+            }
+        }
 
         imshow("mask", mask);
 
